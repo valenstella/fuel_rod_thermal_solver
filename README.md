@@ -1,199 +1,305 @@
-# Fuel Rod Thermal Solver
+# Fuel Rod Thermal Analysis and Finite Difference Validation
 
+## Overview
 
-## Objective
+This project investigates radial heat conduction in a cylindrical nuclear fuel pellet.
 
-This project models the radial temperature distribution inside a cylindrical nuclear fuel pellet under steady-state conditions with uniform volumetric heat generation.
+The work combines:
 
-The objective is to investigate how fuel temperature depends on:
+- Analytical heat conduction solutions
+- Parametric thermal studies
+- Finite Difference Method (FDM) implementation
+- Numerical validation against analytical solutions
 
-- Heat generation rate
-- Thermal conductivity
-- Radial position within the pellet
-
-The project also explores the sensitivity of centerline temperature to material properties and reactor power.
-
----
-
-## Background
-
-Nuclear fuel generates heat throughout its volume due to fission reactions.
-
-Because heat is generated internally and removed at the surface by the coolant, a temperature gradient develops inside the fuel pellet.
-
-The highest temperature occurs at the centerline, while the lowest temperature occurs at the outer surface.
-
-Understanding this temperature distribution is essential for:
-
-- Fuel performance analysis
-- Thermal safety evaluations
-- Reactor design
-- Fuel material selection
+The objective is to understand both the thermal behavior of nuclear fuel and the numerical techniques used to solve engineering heat transfer problems.
 
 ---
 
-## Governing Equation
+## Physical Problem
 
-For steady-state radial heat conduction in a cylinder with uniform heat generation:
+A cylindrical fuel pellet generates heat uniformly due to nuclear fission.
 
-```text
-(1/r) d/dr ( r dT/dr ) + q'''/k = 0
-```
+Under steady-state conditions, the radial heat conduction equation is:
+
+$$
+\frac{1}{r}
+\frac{d}{dr}
+\left(
+r \frac{dT}{dr}
+\right)
++ \frac{q'''}{k}
+=
+0
+$$
 
 where:
 
-| Parameter | Description |
-|------------|-------------|
-| T | Temperature (°C) |
-| r | Radial position (m) |
-| q''' | Volumetric heat generation rate (W/m³) |
-| k | Thermal conductivity (W/m·K) |
+- $T$ = temperature
+- $r$ = radial coordinate
+- $q'''$ = volumetric heat generation rate
+- $k$ = thermal conductivity
+
+---
+
+## Boundary Conditions
+
+### Centerline Symmetry
+
+$$
+\frac{dT}{dr}=0
+$$
+
+At the center of the pellet, there is no heat flux due to symmetry.
+
+### Surface Temperature
+
+$$
+T(R)=T_s
+$$
+
+The pellet surface temperature is prescribed.
 
 ---
 
 ## Analytical Solution
 
-Applying the appropriate symmetry and boundary conditions yields:
+For constant thermal conductivity and uniform heat generation:
 
-```text
-T(r) = Ts + (q'''/(4k))(R² - r²)
-```
+$$ T(r)=
+T_s
++
+\frac{q'''}{4k}
+\left(
+R^2-r^2
+\right)
+$$
 
-where:
-
-| Parameter | Description |
-|------------|-------------|
-| Ts | Surface temperature |
-| R | Pellet radius |
-| r | Radial coordinate |
-
-The centerline temperature is obtained at r = 0:
-
-```text
-Tcenter = Ts + q'''R²/(4k)
-```
-
----
-
-## Tools
-
-- Python
-- NumPy
-- Matplotlib
+This expression provides the temperature distribution throughout the fuel pellet.
 
 ---
 
 ## Model Parameters
 
 | Parameter | Value |
-|------------|---------|
+|------------|--------|
 | Pellet Radius | 4 mm |
 | Surface Temperature | 600 °C |
-| Heat Generation Rate | 1×10⁸ – 5×10⁸ W/m³ |
-| Thermal Conductivity | 2 – 8 W/m·K |
+| Thermal Conductivity | 3 W/m-K |
+| Heat Generation Rate | $3\times10^8$ W/m³ |
 
 ---
 
+# Part I – Analytical Thermal Studies
+
 ## Temperature Profile
 
-The temperature distribution was calculated across the pellet radius for different heat generation rates.
+The analytical solution was used to calculate the radial temperature distribution inside the fuel pellet.
 
-![power_comparison.png](power_comparison.png)
+![Temperature Profile](temperature_profile.png)
 
-### Observation
+The highest temperature occurs at the centerline, while the surface temperature remains fixed.
 
-- Higher heat generation rates produce larger temperature gradients.
-- Surface temperature remains fixed.
-- Centerline temperature increases significantly with power.
-- The temperature profile maintains its parabolic shape.
+---
+
+## Effect of Heat Generation Rate
+
+Several power densities were evaluated:
+
+$$
+1\times10^8
+\le q'''
+\le
+5\times10^8
+\quad
+W/m^3
+$$
+
+The centerline temperature increases linearly with heat generation rate.
+
+![Power Study](power_study.png)
 
 ---
 
 ## Effect of Thermal Conductivity
 
-The temperature distribution was also evaluated for different thermal conductivities.
+Different thermal conductivity values were analyzed:
 
-![conductivity_comparison.png](conductivity_comparison.png)
+$$
+k=
+2,\,
+3,\,
+4,\,
+6,\,
+8
+\quad W/m-K
+$$
 
-### Observation
+Higher thermal conductivity reduces the temperature gradient and lowers the centerline temperature.
 
-- Higher thermal conductivity reduces temperature gradients.
-- Peak fuel temperature decreases as conductivity increases.
-- Better heat-conducting materials operate at lower temperatures for the same power density.
-
----
-
-## Centerline Temperature Sensitivity
-
-The centerline temperature was calculated as a function of heat generation rate for several thermal conductivity values.
-
-![centerline_vs_power.png](center_temperature.png)
-
-### Observation
-
-- Centerline temperature increases linearly with power density.
-- The slope decreases as thermal conductivity increases.
-- Materials with higher conductivity provide improved thermal performance.
+![Conductivity Study](conductivity_study.png)
 
 ---
 
-## Engineering Relevance
+## Centerline Temperature Correlation
 
-This simplified model captures the fundamental thermal behavior of nuclear fuel.
+The analytical solution predicts:
 
-Although idealized, the analysis demonstrates key concepts used in:
+$$ T_{center}=
+T_s
++
+\frac{q'''R^2}{4k}
+$$
 
-- Fuel performance codes
-- Thermal-hydraulic calculations
-- Reactor safety analysis
-- Nuclear fuel design
-- Heat transfer modeling
+This relationship was verified numerically for multiple material properties and heat generation rates.
 
-The project illustrates how thermal conductivity and power density influence fuel temperature, two critical parameters in reactor operation.
+![Centerline Temperature](centerline_temperature.png)
 
 ---
 
-## Skills Demonstrated
+# Part II – Finite Difference Solver
 
-- Heat transfer modeling
-- Analytical solution of differential equations
-- Scientific computing with Python
-- Parametric studies
-- Engineering data visualization
+## Numerical Method
+
+The governing equation was discretized using central finite differences.
+
+For interior nodes:
+
+$$
+\left(
+1-\frac{\Delta r}{2r_i}
+\right)T_{i-1}
+-2T_i
++
+\left(
+1+\frac{\Delta r}{2r_i}
+\right)T_{i+1}
+=
+-\frac{q'''}{k}\Delta r^2
+$$
+
+This formulation produces a linear system:
+
+$$
+A\,T=b
+$$
+
+which is solved using:
+
+```python
+np.linalg.solve(A, b)
+```
+
+---
+
+## Matrix Structure
+
+The finite difference discretization generates a sparse tridiagonal matrix.
+
+![Matrix Structure](matrix_structure.png)
+
+Such matrices are typical in heat transfer and diffusion problems.
+
+---
+
+## Numerical Validation
+
+The finite difference solution was compared against the analytical solution.
+
+![Numerical Validation](validation.png)
+
+Excellent agreement was observed throughout the computational domain.
+
+---
+
+## Error Analysis
+
+The absolute error was evaluated as:
+
+$$
+Error=
+|T_{numerical}-T_{analytical}|
+$$
+
+![Error Distribution](error_distribution.png)
+
+Maximum errors were found to be on the order of:
+
+$$
+10^{-10}
+\text{ to }
+10^{-12}
+$$
+
+---
+
+## Interpretation
+
+The analytical solution is a quadratic function of radius:
+
+$$ T(r)=
+T_s
++
+\frac{q'''}{4k}
+(R^2-r^2)
+$$
+
+Since the finite difference formulation reproduces quadratic functions exactly, the discretization error is essentially eliminated.
+
+The remaining discrepancy is dominated by floating-point roundoff error.
+
+This provides strong verification that the solver has been implemented correctly.
+
+---
+
+# Engineering Applications
+
+The methods demonstrated here are directly applicable to:
+
+- Nuclear fuel performance analysis
+- Reactor thermal design
+- Fuel centerline temperature prediction
+- Heat transfer simulations
+- Diffusion and transport problems
+- Finite Difference Method development
+- Numerical verification and validation (V&V)
+
+---
+
+# Skills Demonstrated
+
+- Heat conduction modeling
 - Nuclear engineering fundamentals
-- Sensitivity analysis
+- Analytical solution derivation
+- Finite Difference Method (FDM)
+- Matrix assembly
+- Numerical linear algebra
+- Solver verification
+- Error analysis
+- Scientific visualization
+- Python scientific computing
 - Git and GitHub workflow
 
 ---
 
-## Key Findings
-
-- Temperature follows a parabolic radial distribution.
-- Peak temperature occurs at the fuel centerline.
-- Increasing power density increases fuel temperature.
-- Increasing thermal conductivity reduces peak temperature.
-- Centerline temperature varies linearly with heat generation rate.
-- Material properties strongly influence thermal performance.
-
----
-
-## Future Improvements
+# Future Improvements
 
 Potential extensions include:
 
-- Finite Difference Method (FDM) solution
-- Numerical vs analytical comparison
 - Temperature-dependent thermal conductivity
+- Non-uniform heat generation
 - Fuel-cladding gap modeling
+- Convective boundary conditions
 - Transient heat conduction
-- Multi-layer fuel rod analysis
-- Coupling with coolant boundary conditions
+- Finite Volume Method implementation
+- OpenFOAM comparison
+- Coupled neutronic-thermal simulations
 
 ---
 
-## References
+# Tools
 
-- Incropera, Fundamentals of Heat and Mass Transfer
-- Todreas & Kazimi, Nuclear Systems
-- Lamarsh & Baratta, Introduction to Nuclear Engineering
-- Nuclear Fuel Thermal Analysis Literature
+- Python
+- NumPy
+- Matplotlib
+
+---
